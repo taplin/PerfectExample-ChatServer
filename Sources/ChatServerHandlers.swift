@@ -37,15 +37,12 @@ func addChatServerHandler() {
     Routing.Routes["/leave/{channelid}/{clientid}"] = leaveHandler
     Routing.Routes["/r"] = channelHandler
     
-    Routing.Routes["/ws"] = {
-        _ in
-        
-        return WebSocketHandler(handlerProducer: {
+    Routing.Routes["/ws"] = WebSocketHandler(handlerProducer: {
             (request: WebRequest, protocols: [String]) -> WebSocketSessionHandler? in
             print("protocols string \(protocols)")
             return ChatWSHandler()
-        })
-    }
+        }).handleRequest
+    
     
     // Check the console to see the logical structure of what was installed.
     print("\(Routing.Routes.description)")
@@ -301,11 +298,8 @@ public func PerfectServerModuleInit() {
 //Create a handler for index Route
 func indexHandler(_ request: HTTPRequest, response: HTTPResponse) {
     
-    func handleRequest(request: HTTPRequest, response: HTTPResponse) {
-        
         response.appendBody(string: "<html><body>Raw request handler: You requested path \(request.path) with content-type \(request.header(HTTPRequestHeader.Name.contentType)) and POST body \(request.postBodyString)</body></html>")
         response.completed()
-    }
 }
 func generateClientId() -> String {
     return String.fromUUID(uuid: random_uuid()).lowercased()
