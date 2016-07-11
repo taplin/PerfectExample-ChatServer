@@ -7,6 +7,7 @@
 //
 
 import PerfectLib
+import PerfectHTTPServer
 import PerfectWebSockets
 
 // Initialize base-level services

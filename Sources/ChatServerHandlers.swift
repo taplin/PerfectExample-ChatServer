@@ -1,4 +1,5 @@
 import PerfectLib
+import PerfectHTTP
 import PerfectThread
 import PerfectWebSockets
 
@@ -19,7 +20,7 @@ func addChatServerHandler() {
         // To add a WebSocket service, set the handler to WebSocketHandler.
         // Provide your closure which will return your service handler.
         WebSocketHandler(handlerProducer: {
-            (request: WebRequest, protocols: [String]) -> WebSocketSessionHandler? in
+            (request: HTTPRequest, protocols: [String]) -> WebSocketSessionHandler? in
             
             // Check to make sure the client is requesting our "echo" service.
             guard protocols.contains("echo") else {
@@ -38,7 +39,7 @@ func addChatServerHandler() {
     Routing.Routes["/r"] = channelHandler
     
     Routing.Routes["/ws"] = WebSocketHandler(handlerProducer: {
-            (request: WebRequest, protocols: [String]) -> WebSocketSessionHandler? in
+            (request: HTTPRequest, protocols: [String]) -> WebSocketSessionHandler? in
             print("protocols string \(protocols)")
             return ChatWSHandler()
         }).handleRequest
@@ -219,7 +220,7 @@ class ChatWSHandler: WebSocketSessionHandler {
         }
     }
     
-    func handleSession(request: WebRequest, socket: WebSocket) {
+    func handleSession(request: HTTPRequest, socket: WebSocket) {
         print("ChatWSHandler new session")
         print("channels: \(ChatWSHandler.channelDict)");
         socket.readStringMessage { string, op, fin in
@@ -250,7 +251,7 @@ class ChatWSHandler: WebSocketSessionHandler {
                                 
                             } else if let channelid = decodedDict["channelid"] as? String {
                                 let channel = ChatWSHandler.channel(named: channelid)
-                                let clientid = String.fromUUID(uuid: random_uuid())
+                                let clientid = UUID().string
                                 
                                 
                                 print("ws Join \(channelid) \(clientid)")
@@ -326,7 +327,7 @@ func indexHandler(_ request: HTTPRequest, response: HTTPResponse) {
         response.completed()
 }
 func generateClientId() -> String {
-    return String.fromUUID(uuid: random_uuid()).lowercased()
+    return UUID().string.lowercased()
     //return NSUUID().UUIDString.lowercaseString
 }
 //Join Channel
@@ -407,11 +408,11 @@ func channelHandler(_ request: HTTPRequest, response: HTTPResponse) {
 }
 
 // A WebSocket service handler must impliment the `WebSocketSessionHandler` protocol.
-// This protocol requires the function `handleSession(request: WebRequest, socket: WebSocket)`.
+// This protocol requires the function `handleSession(request: HTTPRequest, socket: WebSocket)`.
 // This function will be called once the WebSocket connection has been established,
 // at which point it is safe to begin reading and writing messages.
 //
-// The initial `WebRequest` object which instigated the session is provided for reference.
+// The initial `HTTPRequest` object which instigated the session is provided for reference.
 // Messages are transmitted through the provided `WebSocket` object.
 // Call `WebSocket.sendStringMessage` or `WebSocket.sendBinaryMessage` to send data to the client.
 // Call `WebSocket.readStringMessage` or `WebSocket.readBinaryMessage` to read data from the client.
@@ -425,7 +426,7 @@ class EchoHandler: WebSocketSessionHandler {
     let socketProtocol: String? = "echo"
     
     // This function is called by the WebSocketHandler once the connection has been established.
-    func handleSession(request: WebRequest, socket: WebSocket) {
+    func handleSession(request: HTTPRequest, socket: WebSocket) {
         
         // Read a message from the client as a String.
         // Alternatively we could call `WebSocket.readBytesMessage` to get binary data from the client.
