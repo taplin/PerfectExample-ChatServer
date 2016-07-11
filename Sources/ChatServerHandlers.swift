@@ -10,7 +10,7 @@ struct PerfectExampleChatServer {
 func addChatServerHandler() {
     
     // Add a default route which lets us serve the static index.html file
-    Routing.Routes["*"] = { request, response in StaticFileHandler().handleRequest(request: request, response: response) }
+    Routing.Routes["*"] =  StaticFileHandler().handleRequest
     
     // Add the endpoint for the WebSocket example system
     Routing.Routes[.get, "/echo"] = {
@@ -46,7 +46,7 @@ func addChatServerHandler() {
     
     // Check the console to see the logical structure of what was installed.
     print("\(Routing.Routes.description)")
-    print("updated 932")
+    
 }
 
 private let loopbackClientId = "LOOPBACK_CLIENT_IC"
@@ -60,17 +60,20 @@ class Channel {
         self.channelName = channelName
     }
     
-    func dispatchMessage(msg: String, fromClientId: String) {
+    func dispatchMessage(msg: String, fromClientId: String, request: String?) {
         // the msg payload here is expected to be a string (of json)
         // have to do the full encoding instead of simply slamming it in :/
         do {
-            let fullMsg: [String:Any] = ["msg":msg, "error":""]
+            var fullMsg: [String:Any] = ["msg":msg, "error":""]
+            if let cmd:String = request {
+                fullMsg["request"] = cmd
+            }
             let jsonCoded = try fullMsg.jsonEncodedString()
             for (id, client) in self.clients where id != fromClientId {
                 client.socket?.sendStringMessage(string: jsonCoded, final: true) {}
             }
             if let sender = self.clients[fromClientId] {
-                sender.socket?.sendStringMessage(string: "Dispatch Completed", final: true) {}
+                sender.socket?.sendStringMessage(string: "{\"msg\": \"Dispatch Completed\"}", final: true) {}
             }
         } catch {
             print("Exception while dispatching message \(error)")
@@ -78,11 +81,11 @@ class Channel {
         
     }
     
-    func echoMessage(msg: String, fromClientId: String) {
+    func echoMessage(msg: String, fromClientId: String, request: String) {
         // the msg payload here is expected to be a string (of json)
         // have to do the full encoding instead of simply slamming it in :/
         do {
-            let fullMsg: [String:Any] = ["msg":msg, "error":""]
+            let fullMsg: [String:Any] = ["msg":msg, "error":"", "request": request]
             let jsonCoded = try fullMsg.jsonEncodedString()
             for (id, client) in self.clients where id == fromClientId {
                 client.socket?.sendStringMessage(string: jsonCoded, final: true) {}
@@ -99,6 +102,7 @@ class Channel {
         self.clients[client.clientId] = client
         if client.loopback && self.clients[loopbackClientId] == nil {
             self.addClient(client: ChannelClient(clientId: loopbackClientId, loopback: false))
+            self.dispatchMessage(msg: client.clientId, fromClientId: "999", request: "client_add")
         }
     }
     
@@ -120,7 +124,10 @@ class Channel {
             self.clients.removeValue(forKey: clientId)
             if self.clients.count == 0 {
                 ChatWSHandler.removeChannel(channelName: self.channelName)
+            } else {
+                self.dispatchMessage(msg: clientId, fromClientId: "999", request: "client_remove")
             }
+            
         }
     }
     
@@ -142,19 +149,19 @@ class Channel {
                                     do {
                                         if let decodedMsg:String = try msg.jsonDecode() as? String {
                                             let encoded = try decodedMsg.jsonEncodedString()
-                                            self.dispatchMessage(msg: encoded, fromClientId: clientId)
+                                            self.dispatchMessage(msg: encoded, fromClientId: clientId, request: cmd)
                                             return self.startRead(clientId: clientId)
                                         }
                                     } catch {
                                         
                                         if let clientid = decoded["clientid"] as? String,
                                             msg = decoded["msg"] as? String {
-                                            self.dispatchMessage(msg: msg, fromClientId: clientid)
+                                            self.dispatchMessage(msg: msg, fromClientId: clientid, request: cmd)
                                             return self.startRead(clientId: clientid)
                                             
                                         } else {
                                             
-                                            self.dispatchMessage(msg: msg, fromClientId: clientId)
+                                            self.dispatchMessage(msg: msg, fromClientId: clientId, request: cmd)
                                             return self.startRead(clientId: clientId)
                                             /*self.echoMessage("send error: ", fromClientId: clientId)
                                              return self.startRead(clientId)*/
@@ -164,10 +171,10 @@ class Channel {
                             case "echo":
                                 if let msg = decoded["msg"] as? String {
                                     if let clientid = decoded["clientid"] as? String {
-                                        self.echoMessage(msg: msg, fromClientId: clientid)
+                                        self.echoMessage(msg: msg, fromClientId: clientid, request: cmd)
                                         return self.startRead(clientId: clientid)
                                     } else {
-                                        self.echoMessage(msg: msg, fromClientId: clientId)
+                                        self.echoMessage(msg: msg, fromClientId: clientId, request: cmd)
                                         return self.startRead(clientId: clientId)
                                     }
                                 }
@@ -213,7 +220,7 @@ class ChatWSHandler: WebSocketSessionHandler {
     }
     
     func handleSession(request: WebRequest, socket: WebSocket) {
-        print("TennisSourceWSHandler new session")
+        print("ChatWSHandler new session")
         print("channels: \(ChatWSHandler.channelDict)");
         socket.readStringMessage { string, op, fin in
             guard let string = string else {
@@ -236,7 +243,7 @@ class ChatWSHandler: WebSocketSessionHandler {
                                 let channel = ChatWSHandler.channel(named: channelid)
                                 if channel.assignSocket(clientId: clientid, socket: socket) {
                                     if let msg = decodedDict["msg"] as? String{
-                                        channel.echoMessage(msg: msg, fromClientId: clientid)
+                                        channel.echoMessage(msg: msg, fromClientId: clientid, request: cmd)
                                     }
                                     return
                                 }
@@ -262,7 +269,7 @@ class ChatWSHandler: WebSocketSessionHandler {
                                 channel.addClient(client: ChannelClient(clientId: clientid, loopback: loopback))
                                 
                                 if channel.assignSocket(clientId: clientid, socket: socket) {
-                                    channel.echoMessage(msg: channelDictStr, fromClientId: clientid)
+                                    channel.echoMessage(msg: channelDictStr, fromClientId: clientid, request: cmd)
                                     
                                     return
                                 }
@@ -272,9 +279,26 @@ class ChatWSHandler: WebSocketSessionHandler {
                                 clientid = decodedDict["clientid"] as? String,
                                 msg = decodedDict["msg"] as? String {
                                 let channel = ChatWSHandler.channel(named: channelid)
-                                channel.echoMessage(msg: msg, fromClientId: clientid)
+                                channel.echoMessage(msg: msg, fromClientId: clientid, request: cmd)
                                 return
                                 
+                            }
+                        case "channel_list":
+                            if let channelid = decodedDict["channelid"] as? String,
+                                clientid = decodedDict["clientid"] as? String {
+                                    let channelList = try ChatWSHandler.channelDict.jsonEncodedString()
+                                    let channel = ChatWSHandler.channel(named: channelid)
+                                    channel.echoMessage(msg: channelList, fromClientId: clientid, request: cmd)
+                                    return
+                                }
+                        case "client_list":
+                            if let channelid = decodedDict["channelid"] as? String,
+                                clientid = decodedDict["clientid"] as? String {
+                                let channel = ChatWSHandler.channel(named: channelid)
+                                
+                                let clientlist = try channel.clients.jsonEncodedString()
+                                channel.echoMessage(msg: clientlist, fromClientId: clientid, request: cmd)
+                                return
                             }
                         default:
                             ()
@@ -353,7 +377,7 @@ func messageHandler(_ request: HTTPRequest, response: HTTPResponse) {
     }
     let postBody = request.postBodyString
     print("messageHandler \(channelId) \(clientId) \(postBody)")
-    channel.dispatchMessage(msg: postBody!, fromClientId: clientId)
+    channel.dispatchMessage(msg: postBody!, fromClientId: clientId, request: nil)
     
     response.appendBody(string: "{\"result\":\"SUCCESS\"}")
     response.completed()
