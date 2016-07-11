@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>WebSocket Echo Test</title>
+<title>WebSocket Chat Test</title>
 <script language="javascript" type="text/javascript">
     var wsUri = "ws://"+ location.host+"/ws";
-    wsUri = "ws://0.0.0.0:8181/ws";
     var httpURI = "http://"+location.host+"/";
 	var output, input, send;
-	ws_params = {"channel":"trial1"};
+	var ws_params = {"channel":"trial1"};
 	
 	function init() {
 		output = document.getElementById("output");
@@ -16,11 +15,11 @@
 		
 	}
     function requestJoin() {
-    		testWebSocket(ws_params.channel);
+    		connectWebsocket(ws_params.channel);
   
     }
                
-	function testWebSocket(channel, clientid) {
+	function connectWebsocket(channel, clientid) {
 		websocket = new WebSocket(wsUri);
 		websocket.onopen = function(evt) { onOpen(evt) };
 		websocket.onclose = function(evt) { onClose(evt) };
@@ -48,7 +47,11 @@
 	}
 
 	function onMessage(evt) {
-		writeToScreen('<span style="color: blue;">RESPONSE: ' + evt.data+'<\/span>');
+		json_data = JSON.parse(evt.data);
+		msg = json_data["msg"];
+		request = json_data["request"];
+		
+		writeToScreen('<span style="color: blue;">RESPONSE: ' + msg+' for Request: '+ request +'<\/span>');
 	}
 
 	function onError(evt) {
@@ -75,8 +78,8 @@
 </head>
 
 <body>
-<h2>WebSocket Test</h2>
-<p>Click the send button to transmit the text to the WebSocket server. The server will echo back the text.</p>
+<h2>PerfectChat Server Example</h2>
+<p>Chat Server joined on load. Press send to broadcast to others, echo to bounce a message off the Server</p>
 <div id = "left_side" style="float: left;">
     <textarea id="input" cols=48 rows=28 >Sample Text</textarea>
     <br>
