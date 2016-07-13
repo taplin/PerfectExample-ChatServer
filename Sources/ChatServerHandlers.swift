@@ -63,12 +63,12 @@ class Channel {
     
     let channelName:String
     var clients = [String:ChannelClient]()
-    var timer = Timer()
-    let timeInterval:TimeInterval = 10.0
+    //var timer = Timer()
+    //let timeInterval:TimeInterval = 10.0
     
     init(channelName: String) {
         self.channelName = channelName
-        timer = Timer.scheduledTimer(timeInterval: timeInterval, target: self, selector: #selector(dispatchPulse), userInfo: "pulse transmit", repeats: true)
+        //timer = Timer.scheduledTimer(timeInterval: timeInterval, target: self, selector: #selector(dispatchPulse), userInfo: "pulse transmit", repeats: true)
         
     }
     @objc func dispatchPulse() {
