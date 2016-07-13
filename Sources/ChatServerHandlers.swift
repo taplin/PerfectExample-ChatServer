@@ -197,7 +197,8 @@ class Channel {
                                     }
                                 }
                             default: ()
-                                
+                                Log.info(message: "pulse from client: \(clientId)")
+                                return self.startRead(clientId: clientId)
                             }
                         }
                     }
