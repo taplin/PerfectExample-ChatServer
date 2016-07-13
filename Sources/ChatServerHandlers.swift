@@ -69,12 +69,13 @@ class Channel {
             if let cmd:String = request {
                 fullMsg["request"] = cmd
             }
+            fullMsg["clientid"] = fromClientId
             let jsonCoded = try fullMsg.jsonEncodedString()
             for (id, client) in self.clients where id != fromClientId {
                 client.socket?.sendStringMessage(string: jsonCoded, final: true) {}
             }
             if let sender = self.clients[fromClientId] {
-                sender.socket?.sendStringMessage(string: "{\"msg\": \"Dispatch Completed\"}", final: true) {}
+                sender.socket?.sendStringMessage(string: "{\"msg\": \"Dispatch Completed\", \"request\": \"dispatch\" }", final: true) {}
             }
         } catch {
             print("Exception while dispatching message \(error)")
@@ -101,10 +102,11 @@ class Channel {
         
         self.removeClient(clientId: client.clientId)
         self.clients[client.clientId] = client
+        
         if client.loopback && self.clients[loopbackClientId] == nil {
             self.addClient(client: ChannelClient(clientId: loopbackClientId, loopback: false))
-            self.dispatchMessage(msg: client.clientId, fromClientId: "999", request: "client_add")
         }
+        self.dispatchMessage(msg: client.clientId, fromClientId: client.clientId, request: "client_add")
     }
     
     func assignSocket(clientId: String, socket: WebSocket) -> Bool {
@@ -256,21 +258,25 @@ class ChatWSHandler: WebSocketSessionHandler {
                                 
                                 print("ws Join \(channelid) \(clientid)")
                                 
-                                let channelDict: [String:Any] = [
-                                    "params": [
-                                        "client_id":clientid,
-                                        "channel_id":channelid,
-                                        "messages":[Any](),
-                                        ] as [String:Any],
+                                var msgParams:[String:Any] = [
+                                    "client_id":clientid,
+                                    "channel_id":channelid,
+                                    "messages":[Any](),
+                                    ]
+                                if channel.clients.count > 0 {
+                                    msgParams["client_list"] = Array(channel.clients.keys)
+                                }
+                                let msgDict: [String:Any] = [
+                                    "params": msgParams,
                                     "result":"Success"
                                 ]
                                 
-                                let channelDictStr = try channelDict.jsonEncodedString()
+                                let msgDictStr = try msgDict.jsonEncodedString()
                                 let loopback = false
                                 channel.addClient(client: ChannelClient(clientId: clientid, loopback: loopback))
                                 
                                 if channel.assignSocket(clientId: clientid, socket: socket) {
-                                    channel.echoMessage(msg: channelDictStr, fromClientId: clientid, request: cmd)
+                                    channel.echoMessage(msg: msgDictStr, fromClientId: clientid, request: cmd)
                                     
                                     return
                                 }
@@ -301,6 +307,16 @@ class ChatWSHandler: WebSocketSessionHandler {
                                 channel.echoMessage(msg: clientlist, fromClientId: clientid, request: cmd)
                                 return
                             }
+                        case "update_handle":
+                            if let newhandle = decodedDict["client_handle"] as? String,
+                                clientid = decodedDict["clientid"] as? String,
+                                channelid = decodedDict["channelid"] as? String,
+                                channel = ChatWSHandler.channelDict[channelid]
+                                {
+                                    if let client = channel.clients[clientid] {
+                                        client.clientHandle = newhandle
+                                    }
+                                }
                         default:
                             ()
                         }
@@ -346,7 +362,7 @@ func joinHandler(_ request: HTTPRequest, response: HTTPResponse) {
         let loopback = request.param(name: "debug") == "loopback"
         print("Join Handler \(channelId) \(clientId)")
         
-        let channelDict: [String:Any] = [
+        let msgDict: [String:Any] = [
             "params": [
                 "client_id":clientId,
                 "channel_id":channelId,
@@ -355,8 +371,8 @@ func joinHandler(_ request: HTTPRequest, response: HTTPResponse) {
             "result":"Success"
         ]
         
-        let channelDictStr = try channelDict.jsonEncodedString()
-        response.appendBody(string: channelDictStr)
+        let msgDictStr = try msgDict.jsonEncodedString()
+        response.appendBody(string: msgDictStr)
         
         let channel = ChatWSHandler.channel(named: channelId)
         channel.addClient(client: ChannelClient(clientId: clientId, loopback: loopback))
@@ -466,6 +482,7 @@ class EchoHandler: WebSocketSessionHandler {
 class ChannelClient {
     var socket: WebSocket?
     let clientId: String
+    var clientHandle: String?
     let loopback: Bool
     
     init(clientId: String, loopback: Bool) {
