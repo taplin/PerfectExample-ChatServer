@@ -3,8 +3,8 @@
 		output = document.getElementById("output");
 		input = document.getElementById("input");
 		clients = document.getElementById("clients");
-        requestJoin();
-		var myTimer = setInterval(pulse, 55000);
+		requestJoin();
+		myTimer = setInterval(pulse, 30000);
 	}
     function requestJoin() {
     		connectWebsocket(ws_params.channel);
