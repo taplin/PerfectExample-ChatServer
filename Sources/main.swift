@@ -10,6 +10,12 @@ import PerfectLib
 import PerfectHTTPServer
 import PerfectWebSockets
 
+#if os(Linux)
+    import SwiftGlibc
+#else
+    import Darwin
+#endif
+
 // Initialize base-level services
 PerfectServer.initializeServices()
 

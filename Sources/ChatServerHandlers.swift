@@ -2,6 +2,13 @@ import PerfectLib
 import PerfectHTTP
 import PerfectThread
 import PerfectWebSockets
+import Foundation
+
+#if os(Linux)
+    import SwiftGlibc
+#else
+    import Darwin
+#endif
 
 struct PerfectExampleChatServer {
 
@@ -56,11 +63,19 @@ class Channel {
     
     let channelName:String
     var clients = [String:ChannelClient]()
+    var timer = Timer()
+    let timeInterval:TimeInterval = 10.0
     
     init(channelName: String) {
         self.channelName = channelName
+        timer = Timer.scheduledTimer(timeInterval: timeInterval, target: self, selector: #selector(dispatchPulse), userInfo: "pulse transmit", repeats: true)
+        
     }
-    
+    @objc func dispatchPulse() {
+        Log.error(message: "Pulse sent")
+        dispatchMessage(msg: "pulse", fromClientId: "999", request: "pulse")
+
+    }
     func dispatchMessage(msg: String, fromClientId: String, request: String?) {
         // the msg payload here is expected to be a string (of json)
         // have to do the full encoding instead of simply slamming it in :/

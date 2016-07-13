@@ -4,7 +4,7 @@
 		input = document.getElementById("input");
 		clients = document.getElementById("clients");
         requestJoin();
-		
+		var myTimer = setInterval(pulse, 55000);
 	}
     function requestJoin() {
     		connectWebsocket(ws_params.channel);
@@ -36,6 +36,7 @@
 
 	function onClose(evt) {
 		writeToScreen("DISCONNECTED");
+		clearInterval(myTimer)
 	}
 
 	function onMessage(evt) {
@@ -81,6 +82,12 @@
         valuetosend = {"cmd": "echo", "msg": input.value, "clientid": ws_params.client_id, "channelid": ws_params.channel};
         websocket.send(JSON.stringify(valuetosend));
     }
+     function pulse() {
+	     
+        valuetosend = {"cmd": "pulse", "msg": ".", "clientid": ws_params.client_id, "channelid": ws_params.channel};
+        websocket.send(JSON.stringify(valuetosend));
+	}
+	
 	function writeToScreen(message) {
 		output.innerHTML += '<br>' +message;
 	}
