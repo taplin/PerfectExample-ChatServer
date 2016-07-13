@@ -1,1 +1,1 @@
-web: PerfectChatServer --port $PORT
+web: .build/debug/PerfectChatServer --port $PORT
