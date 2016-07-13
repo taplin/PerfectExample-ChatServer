@@ -21,9 +21,22 @@ try Dir(webRoot).create()
 addChatServerHandler()
 
 do {
+    let server = HTTPServer()
     
-    // Launch the HTTP server on port 8181
-    try HTTPServer(documentRoot: webRoot).start(port: 8181)
+    // Set a listen port of 8181
+    server.serverPort = 8181
+    
+    // Set a document root.
+    // This is optional. If you do not want to serve static content then do not set this.
+    server.documentRoot = "./webroot"
+    
+    // Gather command line options and further configure the server.
+    // Run the server with --help to see the list of supported arguments.
+    // Command line arguments will supplant any of the values set above.
+    configureServer(server)
+    
+    // Launch the HTTP server.
+    try server.start()
     
 } catch PerfectError.networkError(let err, let msg) {
     print("Network error thrown: \(err) \(msg)")
