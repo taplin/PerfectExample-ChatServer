@@ -2,29 +2,37 @@
 <html lang="en">
 <head>
 <title>WebSocket Chat Test</title>
-<script language="javascript" type="text/javascript">
-    var wsUri = "ws://"+ location.host+"/ws";
-    var httpURI = "http://"+location.host+"/";
-	var output, input, send;
-	var ws_params = {"channel":"trial1"};
 
-	window.addEventListener("load", init, false);
-</script>
 </head>
 
 <body>
 <h2>PerfectChat Server Example</h2>
 <p>Chat Server joined on load. Press send to broadcast to others, echo to bounce a message off the Server</p>
-<div id = "left_side" style="float: left;">
-    <textarea id="input" cols=48 rows=28 >Sample Text</textarea>
-    <br>
-    <button onclick="doSend()">Send</button><button onclick="doEcho()">Echo</button>
+<div id = "main_chat" style="float: left;">
+	<div id="left_side" style="float: left;width:350px; overflow:scroll">
+	    <div id="output"></div>
+	</div>
+	<div id="right_side" style="float: left; width:410px; max-height: 400px;overflow:scroll">
+		<div id="clients"></div>
+	</div>
+	
+	<div id="input_row" style="float: left; clear: both; width: 80%;">
+	    <input type=text id="input" style="width=80%;" ></input>
+	
+	    <button onclick="doSend()">Send</button>
+	    <button onclick="doEcho()">Echo</button>
+    </div>
+</div>
 
-</div>
-<div id="right_side" style="float: left;width:250px;overflow:scroll">
-    <div id="output"></div>
-</div>
 </body>
 <script src="https://code.jquery.com/jquery-2.2.0.min.js" ></script>
 <script src="/js/chatfunctions.js" ></script>
+<script language="javascript" type="text/javascript">
+    var wsUri = "ws://"+ location.host+"/ws";
+    var httpURI = "http://"+location.host+"/";
+    var output, input, send;
+    var ws_params = {"channel":"trial1"};
+
+	window.addEventListener("load", init, false);
+</script>
 </html>
