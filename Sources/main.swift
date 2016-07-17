@@ -7,6 +7,7 @@
 //
 
 import PerfectLib
+import PerfectHTTP
 import PerfectHTTPServer
 import PerfectWebSockets
 
@@ -28,7 +29,9 @@ addChatServerHandler()
 
 do {
     let server = HTTPServer()
-    
+
+    configureServer(server)
+    PerfectServerModuleInit()
     // Set a listen port of 8181
     server.serverPort = 8181
     

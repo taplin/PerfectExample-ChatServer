@@ -15,18 +15,14 @@ struct PerfectExampleChatServer {
     var text = "Hello, World!"
 }
 
-func addChatServerHandler() {
+func addChatServerHandler()->Routes {
     
+    var routes = Routes()
     // Add a default route which lets us serve the static index.html file
-    Routing.Routes["*"] =  StaticFileHandler().handleRequest
+    routes.add(method: .get, uri: "*", handler: StaticFileHandler().handleRequest)
     
     // Add the endpoint for the WebSocket example system
-    Routing.Routes[.get, "/echo"] = {
-        request, response in
-        
-        // To add a WebSocket service, set the handler to WebSocketHandler.
-        // Provide your closure which will return your service handler.
-        WebSocketHandler(handlerProducer: {
+    routes.add(method: .get, uri: "/echo", handler: WebSocketHandler(handlerProducer: {
             (request: HTTPRequest, protocols: [String]) -> WebSocketSessionHandler? in
             
             // Check to make sure the client is requesting our "echo" service.
@@ -36,25 +32,30 @@ func addChatServerHandler() {
             
             // Return our service handler.
             return EchoHandler()
-        }).handleRequest(request: request, response: response)
-    }
-    
+        }).handleRequest)
+
     //WS route handlers
-    Routing.Routes["/join/{channelid}"] = joinHandler
-    Routing.Routes["/message/{channelid}/{clientid}"] = messageHandler
-    Routing.Routes["/leave/{channelid}/{clientid}"] = leaveHandler
-    Routing.Routes["/r"] = channelHandler
+    routes.add(method: .get, uri:"/join/{channelid}", handler: joinHandler)
+    routes.add(method: .get, uri:"/message/{channelid}/{clientid}", handler: messageHandler)
+    routes.add(method: .get, uri:"/leave/{channelid}/{clientid}", handler: leaveHandler)
+    routes.add(method: .get, uri:"/r", handler: channelHandler)
     
-    Routing.Routes["/ws"] = WebSocketHandler(handlerProducer: {
+    //WS Post route handlers
+    routes.add(method: .post, uri:"/join/{channelid}", handler: joinHandler)
+    routes.add(method: .post, uri:"/message/{channelid}/{clientid}", handler: messageHandler)
+    routes.add(method: .post, uri:"/leave/{channelid}/{clientid}", handler: leaveHandler)
+    routes.add(method: .post, uri:"/r", handler: channelHandler)
+    
+    routes.add(method: .post, uri:"/ws", handler: WebSocketHandler(handlerProducer: {
             (request: HTTPRequest, protocols: [String]) -> WebSocketSessionHandler? in
             print("protocols string \(protocols)")
             return ChatWSHandler()
-        }).handleRequest
+        }).handleRequest)
     
     
     // Check the console to see the logical structure of what was installed.
-    print("\(Routing.Routes.description)")
-    
+    print(routes.navigator.description)
+    return routes
 }
 
 private let loopbackClientId = "LOOPBACK_CLIENT_IC"
