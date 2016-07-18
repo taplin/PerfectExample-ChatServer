@@ -23,13 +23,14 @@ PerfectServer.initializeServices()
 // Create our webroot
 let webRoot = "./webroot"
 try Dir(webRoot).create()
+var production = false
 
 do {
     let server = HTTPServer()
 
     // Set a listen port of 8181
     server.serverPort = 8181
- 
+    
     // Add our routes and such
     let chatRoutes = addChatServerHandler()
     server.addRoutes(chatRoutes)

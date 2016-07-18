@@ -1,15 +1,14 @@
 
 	function init() {
 		output = document.getElementById("output");
-		input = document.getElementById("input");
+		input = document.getElementById("chatinput");
 		clients = document.getElementById("clients");
 		requestJoin();
 		myTimer = setInterval(pulse, 30000);
 	}
-    function requestJoin() {
+	function requestJoin() {
     		connectWebsocket(ws_params.channel);
-  
-    }
+    	}
                
 	function connectWebsocket(channel, clientid) {
 		websocket = new WebSocket(wsUri);

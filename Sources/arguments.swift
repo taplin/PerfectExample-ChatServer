@@ -43,6 +43,10 @@ func configureServer(_ server: HTTPServer) {
     }
     
     let validArgs = [
+        "--production": {
+            production = true
+            server.serverPort = 48181
+        },
         "--sslcert": {
             args.removeFirst()
             sslCert = argFirst()
