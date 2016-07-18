@@ -24,26 +24,27 @@ PerfectServer.initializeServices()
 let webRoot = "./webroot"
 try Dir(webRoot).create()
 
-// Add our routes and such
-addChatServerHandler()
-
 do {
     let server = HTTPServer()
 
-    configureServer(server)
-    PerfectServerModuleInit()
     // Set a listen port of 8181
     server.serverPort = 8181
-    
+ 
+    // Add our routes and such
+    let chatRoutes = addChatServerHandler()
+    server.addRoutes(chatRoutes)
+
     // Set a document root.
     // This is optional. If you do not want to serve static content then do not set this.
-    server.documentRoot = "./webroot"
+    server.documentRoot = webRoot
+
+    // Check the console to see the logical structure of what was installed.
+    print(chatRoutes.navigator.description)
     
     // Gather command line options and further configure the server.
     // Run the server with --help to see the list of supported arguments.
     // Command line arguments will supplant any of the values set above.
     configureServer(server)
-    
     // Launch the HTTP server.
     try server.start()
     

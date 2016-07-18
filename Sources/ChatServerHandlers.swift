@@ -15,11 +15,11 @@ struct PerfectExampleChatServer {
     var text = "Hello, World!"
 }
 
-func addChatServerHandler()->Routes {
+func addChatServerHandler() -> Routes {
     
     var routes = Routes()
     // Add a default route which lets us serve the static index.html file
-    routes.add(method: .get, uri: "*", handler: StaticFileHandler().handleRequest)
+    //Routing.Routes["*"] =  StaticFileHandler().handleRequest
     
     // Add the endpoint for the WebSocket example system
     routes.add(method: .get, uri: "/echo", handler: WebSocketHandler(handlerProducer: {
@@ -32,29 +32,31 @@ func addChatServerHandler()->Routes {
             
             // Return our service handler.
             return EchoHandler()
-        }).handleRequest)
-
+        }).handleRequest
+    )
+    
     //WS route handlers
     routes.add(method: .get, uri:"/join/{channelid}", handler: joinHandler)
     routes.add(method: .get, uri:"/message/{channelid}/{clientid}", handler: messageHandler)
     routes.add(method: .get, uri:"/leave/{channelid}/{clientid}", handler: leaveHandler)
     routes.add(method: .get, uri:"/r", handler: channelHandler)
     
-    //WS Post route handlers
-    routes.add(method: .post, uri:"/join/{channelid}", handler: joinHandler)
-    routes.add(method: .post, uri:"/message/{channelid}/{clientid}", handler: messageHandler)
-    routes.add(method: .post, uri:"/leave/{channelid}/{clientid}", handler: leaveHandler)
-    routes.add(method: .post, uri:"/r", handler: channelHandler)
-    
-    routes.add(method: .post, uri:"/ws", handler: WebSocketHandler(handlerProducer: {
-            (request: HTTPRequest, protocols: [String]) -> WebSocketSessionHandler? in
-            print("protocols string \(protocols)")
-            return ChatWSHandler()
-        }).handleRequest)
-    
+    routes.add(method: .get, uri: "/ws", handler: WebSocketHandler(handlerProducer: {
+        (request: HTTPRequest, protocols: [String]) -> WebSocketSessionHandler? in
+        print("protocols string \(protocols)")
+        return ChatWSHandler()
+    }).handleRequest
+    )
+    /*Routing.Routes["/ws"] = WebSocketHandler(handlerProducer: {
+        (request: HTTPRequest, protocols: [String]) -> WebSocketSessionHandler? in
+        print("protocols string \(protocols)")
+        return ChatWSHandler()
+    }).handleRequest
+    */
     
     // Check the console to see the logical structure of what was installed.
-    print(routes.navigator.description)
+    print("\(Routing.Routes.description)")
+    
     return routes
 }
 
